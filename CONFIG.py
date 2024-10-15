@@ -1,0 +1,8 @@
+
+
+NUM_OF_SERIES = 30
+
+GYRO_MSE = 30
+ANGLE_MSE = 20
+
+BASE_PATH = ""

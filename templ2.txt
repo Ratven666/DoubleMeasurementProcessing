@@ -1,0 +1,10 @@
+}
+
+\begin{document}
+\begin{center}
+\section*{Obrabotka dvojnyih izmerenij}
+\end{center}
+
+$body$
+
+\end{document}
