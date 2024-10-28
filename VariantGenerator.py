@@ -10,6 +10,7 @@ import pytils
 
 from Azimuth import Azimuth
 from CONFIG import NUM_OF_SERIES, ANGLE_MSE, GYRO_MSE, BASE_PATH
+from Solver import Solver
 
 
 class VariantGenerator:
@@ -17,16 +18,17 @@ class VariantGenerator:
     def __init__(self, student_name: str, num_of_series=NUM_OF_SERIES):
         self.student_name = student_name.strip()
         self.num_of_series = num_of_series
-        random.seed(self._get_hash())
-        np.random.seed(self._get_hash())
+        random.seed(self._get_hash()[0])
+        np.random.seed(self._get_hash()[1])
         self.measured_data = []
         self.stable_error = self._get_stable_error()
         self._init_measured_data()
 
     def _get_hash(self):
-        # hash_ = int(hashlib.sha256(self.student_name.encode("UTF-8")).hexdigest(), 16)
-        hash_ = int(hashlib.sha256(self.student_name.encode("UTF-8")).hexdigest(), 16) % 10 ** 8
-        return hash_
+        hash_ = int(hashlib.sha256(self.student_name.encode("UTF-8")).hexdigest(), 16)
+        hash_np = int(hashlib.sha256(self.student_name.encode("UTF-8")).hexdigest(), 16) % 10 ** 8
+        # print(hash_)
+        return hash_, hash_np
 
     def _get_mse_of_polygonometry(self, num_of_angles, angle_mse=ANGLE_MSE):
         return angle_mse * num_of_angles ** 0.5
@@ -70,7 +72,7 @@ class VariantGenerator:
                            })
         return pd.DataFrame(df_lst, index=list(range(1, self.num_of_series + 1)))
 
-    def _generate_template(self, variant_path):
+    def generate_template(self, variant_path):
         with open("templ1.txt", "rt") as file:
             templ1 = file.read()
         with open("templ2.txt", "rt") as file:
@@ -83,17 +85,18 @@ class VariantGenerator:
         with open(os.path.join(variant_path, 'template.tex'), "w") as file:
             file.write(templ1)
             # file.write(translit_name)
-            file.write(r"}\n\lhead{")
-            file.write("MMOMGI")
+            # file.write(r"}\n\lhead{")
+            # file.write("MMOMGI")
             file.write(templ2)
 
     def save_variant(self, base_path=BASE_PATH, students_group=""):
         variant_path = os.path.join(base_path, f"ММОМГИ_Двойные_Измерения_{datetime.datetime.now().year}",
                                     f"ММОМГИ_Двойные_Измерения_{students_group}")
         os.makedirs(variant_path, exist_ok=True)
-        df = vg.get_measure_df(to_str=True)
+        df = self.get_measure_df(to_str=True)
         with open(os.path.join(variant_path, 'temp.md'), 'w') as f:
             f.write(df.to_markdown(index=True))
+
 
         def markdown_to_pdf(input_file, output_file, template_file=None):
             command = f"pandoc {input_file} -o {output_file} --pdf-engine=xelatex"
@@ -101,7 +104,7 @@ class VariantGenerator:
                 command += f" --template={template_file}"
             subprocess.run(command, shell=True)
 
-        self._generate_template(variant_path)
+        self.generate_template(variant_path)
         markdown_to_pdf(os.path.join(variant_path, 'temp.md'),
                         os.path.join(variant_path, f"{self.student_name.replace(" ", "_")}.pdf"),
                         os.path.join(variant_path, "template.tex"))
@@ -115,7 +118,11 @@ def create_variants_for_students_file(students_file, base_path=BASE_PATH):
             student_name, student_group = student.strip().split(";")
             vg = VariantGenerator(student_name)
             vg.save_variant(students_group=student_group)
+
+            solver = Solver(vg)
+            solver.solve_variant()
             print(student_name, student_group)
+
 
 
 
